@@ -4,11 +4,21 @@
 
 { config, lib, pkgs, ... }:
 
+let
+  home-manager = builtins.fetchTarball https://github.com/nix-community/home-manager/archive/release-25.11.tar.gz;
+in
+
 {
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
+      (import "${home-manager}/nixos")
     ];
+
+  home-manager.useUserPackages = true;
+  home-manager.useGlobalPkgs = true;
+  home-manager.backupFileExtension = "backup";
+  home-manager.users.yyovkov = import ./home.nix;
 
   # Use the GRUB 2 boot loader.
   boot.loader.grub.enable = true;
@@ -96,9 +106,11 @@
   # List packages installed in system profile.
   # You can use https://search.nixos.org/ to find more packages (and options).
   environment.systemPackages = with pkgs; [
+    btop
     git
     iproute2
     openssh
+    prometheus-node-exporter
     tmux
     vim 
   ];
@@ -115,6 +127,12 @@
 
   # Enable the OpenSSH daemon.
   services.openssh.enable = true;
+
+  # Setup node-exporter service
+  services.prometheus.exporters.node = {
+    enable = true;
+    port = 9000;
+  };
 
   # Open ports in the firewall.
   networking.firewall.allowedTCPPorts = [22];
